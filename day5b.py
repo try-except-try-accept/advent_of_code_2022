@@ -25,51 +25,46 @@ def solve(data):
     count = 0
 
     for i, line in enumerate(data):
-
-
-        if line.replace(" ", "").isdigit():
-
-            num_stacks = int(line.strip()[-1])
-            sep = i
+        if line.replace(" ", "").isdigit():     # is this line only digits?
+            num_stacks = int(line.split()[-1])  # last number represents num of stacks
+            sep = i                             # end of stack data
             break
 
-    stacks = [[] for i in range(num_stacks)]
-
+    stacks = [[] for i in range(num_stacks)]    # create empty stacks
     
 
-    for line in data[:sep]:
-        for i in range(1, num_stacks*4, 4):
+    stack_data = data[:sep]
+    mov_data = data[sep+2:]
 
-            if line[i] != " ":
+    STACK_WIDTH = 4
 
+    for line in stack_data:                     
+        for i in range(1, num_stacks*STACK_WIDTH, STACK_WIDTH): # loop through crate code character positions
+
+            if line[i] != " ":                                  # is crate code present?
                 crate = line[i]
-                stacks[i//4].insert(0, crate)
-
-
-    print(stacks)
-
-    input()
-
+                stacks[i//STACK_WIDTH].insert(0, crate)         # if so, add to bottom of stack (top parsed first)
         
             
-    for line in data[sep+2:]:
+    for line in mov_data:
+        
         line = line.split()
 
         amt = int(line[1])
-        from_stack = int(line[3])
-        to_stack = int(line[5])
+        from_stack = int(line[3]) - 1                       # account for 0-based Python indices
+        to_stack = int(line[5]) - 1
 
         move_crates = []
         for i in range(amt):
-            move_crates.append(stacks[from_stack-1].pop())
+            move_crates.append(stacks[from_stack].pop())    # take off top crate and get ready to move
 
-        for m in reversed(move_crates):
-            stacks[to_stack-1].append(m)
+        for crate in reversed(move_crates):                 # crates added in reverse order - equivalent logic to multiple moved at once
+            stacks[to_stack].append(crate)
 
 
     msg = ""
-    for i in stacks:
-        msg += i.pop(-1)
+    for stack in stacks:            # msg = top crate of each stack
+        msg += stack.pop(-1)
         
 
         
