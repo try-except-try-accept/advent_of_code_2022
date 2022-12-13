@@ -94,12 +94,8 @@ def solve(data):
                 goal = key                
                 no_neighbours = True
 
-            
-            
-##
-
             node = get_or_create_node(key, elevation, node_map)
-            
+
             
             if no_neighbours:
                 continue
