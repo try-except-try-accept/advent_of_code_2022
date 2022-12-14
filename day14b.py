@@ -9,7 +9,7 @@ DAY = 14
 TEST_DELIM = "---"
 FILE_DELIM = "\n"
 TESTS = """498,4 -> 498,6 -> 496,6
-503,4 -> 502,4 -> 502,9 -> 494,9///24"""
+503,4 -> 502,4 -> 502,9 -> 494,9///93"""
 
 DEBUG = False
 
@@ -23,15 +23,22 @@ def create_caves(data):
 
     coords = [tuple(map(int, point.split(","))) for point in findall("\d{1,3},\d{1,3}", "\n".join(data))]
     p.bugprint(coords)
-    min_x = min(coords)[0] - 5
-    max_x = max(coords)[0]
+    min_x = min(coords)[0] - 250
+    max_x = max(coords)[0] + 250
 
     min_y = min(coords, key=lambda y:y[1])[1]
-    max_y = max(coords, key=lambda y:y[1])[1] + ABYSS_BUFFER
+    max_y = max(coords, key=lambda y:y[1])[1]
 
     sand_x = 500 - min_x
 
-    grid = [['.' for x in range(max_x-min_x+1)] for y in range(max_y+1)]
+    
+
+    # floor
+
+    data.append(f"{min_x},{max_y+2} -> {max_x},{max_y+2})")
+
+    
+    grid = [['.' for x in range(max_x-min_x+1)] for y in range(max_y+3)]
 
     for row in data:
         cave_coords = []
@@ -62,6 +69,11 @@ def create_caves(data):
                     
                     grid[y1][x] = "#"
 
+
+    
+
+    
+
     return grid, max_y
 
 
@@ -81,6 +93,8 @@ def create_caves(data):
 
 
 def display(grid, sands):
+    if not DEBUG:
+        return False
 
 
     out = ""
@@ -108,15 +122,13 @@ class Sand:
         self.y = 0
         self.grid = grid
         self.settled = False
+        self.new = True
 
-    def fall(self, abyss):
+    def fall(self):
 
         g = self.grid
         x = self.x
         y = self.y
-
-        if y == len(g) - 1:
-            return True
 
         if g[y+1][x] == ".":
             self.y += 1
@@ -127,14 +139,15 @@ class Sand:
             self.y += 1
             self.x += 1
         elif g[y+1][x] in "O#":
+            if self.new:
+                return True
             self.settled = True
 
 
         if self.settled:
             g[self.y][self.x] = "O"
 
-
-        
+        self.new = False
 
 def solve(data):
     count = 0
@@ -143,28 +156,16 @@ def solve(data):
     grid, abyss = create_caves(data)
 
     grid[0][11] = "+"
-
-
-
     abyss = False
-
-    
-
     sands = []
 
-    
-    
-    while not abyss:
-        
-        sands.append(Sand(grid))
-        
+    while not abyss:        
+        sands.append(Sand(grid))        
         while not sands[-1].settled:    
-
-            abyss_met = sands[-1].fall(abyss)
+            blocked_source = sands[-1].fall()
             display(grid, sands)
-            if abyss_met:
-                
-                return len(sands) - 1
+            if blocked_source:                
+                return len(sands)
 
         
 
