@@ -129,12 +129,15 @@ def solve(data):
 
             if not walk(deepcopy(left), deepcopy(right)):
                 data[i], data[i+1] = right, left
+                swapped = True
 
         pass_num += 1
+        
     print("sorted")
-    print(data)
+    for row in data:
+        print(row)
     
-    return new.index([[2]]) + new.index([[6]]) + 2
+    return (data.index([[2]]) + 1) * (data.index([[6]]) + 1)
 
 
 
@@ -146,3 +149,4 @@ if __name__ == "__main__":
         puzzle_input = p.load_puzzle()
         puzzle_input = p.pre_process(puzzle_input, *PP_ARGS)
         print("FINAL ANSWER: ", solve(puzzle_input))
+[
