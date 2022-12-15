@@ -113,56 +113,61 @@ class Beacon:
 
 def check_row(args):
     y_start, polys, all_poss, MAX_DIM, p = args
+    y = y_start
+    if y % 10000 == 0:
     
-    print(f"row {y_start} of {MAX_DIM}")
+        print(f"row {y_start} of {MAX_DIM}")
     row = set()
-    for y in range(y_start, y_start+MAX_DIM//THREADS):
-        for i, poly in enumerate(polys):
+    
+    for i, poly in enumerate(polys):
+        
+        if poly.top[1] < y and poly.bott[1] > y:
+            p.bugprint(f"Computing impossible coords for poly {i}")
+        
+            x_adjust = abs((poly.dim // 2) - abs(poly.y - y))
+
+            left = poly.x - x_adjust
+            right = poly.x + x_adjust               
+            new_row = set()
+            add = False
             
-            if poly.top[1] < y and poly.bott[1] > y:
-                p.bugprint(f"Computing impossible coords for poly {i}")
-            
-                x_adjust = abs((poly.dim // 2) - abs(poly.y - y))
+            for pair in row:
 
-                left = poly.x - x_adjust
-                right = poly.x + x_adjust               
-                new_row = set()
-                add = False
-                
-                for pair in row:
-
-                    if left < pair[0] and right > pair[1]:
-                        # replace this pair
-                        new_row.add((left, right))
-                        add = True
-                    elif left > pair[0] and left < pair[1] and right > pair[1]:
-                        new_row.add((pair[0], right))
-                        add = True
-                    elif left < pair[0] and right < pair[1] and right > pair[0]:
-                        new_row.add((left, pair[1]))
-                        add = True
-                    else:
-                        new_row.add(pair)
-
-                if not add:
+                if left < pair[0] and right > pair[1]:
+                    # replace this pair
                     new_row.add((left, right))
-                        
+                    add = True
+                elif left > pair[0] and left < pair[1] and right > pair[1]:
+                    new_row.add((pair[0], right))
+                    add = True
+                elif left < pair[0] and right < pair[1] and right > pair[0]:
+                    new_row.add((left, pair[1]))
+                    add = True
+                else:
+                    new_row.add(pair)
 
-                row = new_row
+            if not add:
+                new_row.add((left, right))
+                    
 
-        this_row = []
-        # create the ranges
+            row = new_row
 
-        #[this_row.extend(tuple(range(i, j+1))) for i, j in row]        
-        # instead, create the missing ranges
-        [this_row.extend(tuple(range(i, j+1))) for i, j in sorted(row)[1:]]
+    this_row = tuple()
+    # create the ranges
 
-        if this_row:
-            print(this_row)
-##            res = (tuple(res)[0] * 4000000) + y
-##            with open("day15bresult.txt", "w") as f:
-##                f.write(str(res))
-##            exit("finished")
+    #[this_row.extend(tuple(range(i, j+1))) for i, j in row]        
+    # instead, create the missing ranges
+    row = sorted(row)
+
+
+    res = [row[i][1]+1 for i in range(len(row)-1) if row[i+1][0] - row[i][1] > 1]
+    
+    if len(res):
+        
+        return (res[0] * 4000000) + y    
+    
+
+
 
 def solve(data):
     count = 0
@@ -201,20 +206,14 @@ def solve(data):
     threads = []
 
     all_poss = set(range(0, MAX_DIM+1))
-    print("prepping multi processes")
-    with Pool(5) as pool:
-        for y in range(0, MAX_DIM, MAX_DIM//THREADS):
-            args = [y, polys, all_poss, MAX_DIM, p] 
-            check_row(args)
 
-        
+
+    for y in range(0, MAX_DIM):
+        args = [y, polys, all_poss, MAX_DIM, p] 
+        result = check_row(args)
+        if result is not None:  return result
+
     
-
-   
-
-    print("Running threads")
-    for t in threads:
-        t.start()
 
 
 
@@ -227,7 +226,7 @@ if __name__ == "__main__":
     p = PuzzleHelper(DAY, TEST_DELIM, FILE_DELIM, DEBUG, PP_ARGS)
     MAX_DIM = 20
 
-    if True: #p.check(TESTS, solve):
+    if p.check(TESTS, solve):
         MAX_DIM = 4000000
         puzzle_input = p.load_puzzle()
         puzzle_input = p.pre_process(puzzle_input, *PP_ARGS)
