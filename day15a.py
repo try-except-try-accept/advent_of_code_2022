@@ -96,15 +96,12 @@ def compute_points(a, b):
 def display(poly, sensor, beacon):
 
     
-    min_x = min(poly.points)[0]
-    max_x = max(poly.points)[0]
-    min_y = min(poly.points, key=lambda y:y[1])[1]
-    max_y = max(poly.points, key=lambda y:y[1])[1]
+
     s = ""
-    for y in range(min_y, max_y+1):
-        for x in range(min_x, max_x+1):
+    for y in range(-50, 100+1):
+        for x in range(-50, 100+1):
             c = "."
-            if (x, y) in poly.points:
+            if (x, y) in poly:
                 c = "#"
 
             elif (x, y) == (sensor.x, sensor.y):
@@ -120,7 +117,10 @@ def display(poly, sensor, beacon):
 
             
 
-        
+def manhattan(x1, y1, x2, y2):
+
+
+    return abs(x1-x2) + abs(y1-y2)
     
 
 class Sensor:
@@ -139,19 +139,23 @@ class Sensor:
     def get_impossible_beacons(self, beacon):
         self.beacon = beacon
 
-        x_dist = abs(beacon.x-self.x)
-        y_dist = abs(beacon.y-self.y)
+        dist = manhattan(self.x, self.y, beacon.x, beacon.y)
+        
 
         print("Beacon is at", beacon.x, ",", beacon.y)
 
         print("Therefore no beacons within this range:")
 
+        self.left = (self.x-dist, self.y)
+        self.top = (self.x, self.y-dist)
+        self.right =(self.x+dist, self.y)
+        self.bott = (self.x, self.y+dist)
 
+        self.polygon = [self.left, self.top, self.right, self.bott]
 
-        self.polygon = [(-x_dist, self.y),
-        (self.x, -y_dist),
-        (x_dist, self.y),
-        (self.x, y_dist)]
+        self.dim = dist * 2
+
+        display(self.polygon, self, beacon)
 
         
         
@@ -198,29 +202,17 @@ def solve(data):
         
 
 
-        impossible.add(current_sensor.polygon)
+        
     print("Processed sensors/beacons")
 
     all_bounds = []
 
-    for poly in impossible:
-        this_bounds = poly.get_row_bounds(Y_WANTED)
-        if this_bounds is not None:
-            all_bounds.append(this_bounds)
+    
+    polys_affected = [sensor.polygon for sensor in sensors if sensor.top > Y_WANTED and sensor.bott > Y_WANTED]
 
-    impossible = set()
-
-    for x1, x2 in all_bounds:
-        impossible |= set(range(x1, x2+1))
-
-
-
-    all_possible = set(range(row_min, row_max+1))
-
-    print(all_possible)
-
-    input()
-
+    for poly in polys_affected:
+        row = poly.dim - poly.y - Y_WANTED
+        print(row)
  
     print("impossible", impossible)
     print("possible", all_possible, "entire row", len(all_possible), row_min, "to", row_max)
