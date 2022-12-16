@@ -24,11 +24,8 @@ def solve(data):
     count = 0
     data = data[-1]
     CHUNK_SIZE = 4
-
-
     
     for i, char in enumerate(data):
-
 
         chunk = data[i:i+CHUNK_SIZE]
         
