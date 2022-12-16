@@ -1,7 +1,7 @@
 from re import search, match, findall
 from collections import Counter
 from helpers import PuzzleHelper
-from threading import Thread
+from multiprocessing import Pool
 
 PP_ARGS = False, False #rotate, cast int
 
@@ -111,7 +111,9 @@ class Beacon:
         self.y = y
 
 
-def check_row(y_start, polys, all_poss):
+def check_row(args):
+    y_start, polys, all_poss, MAX_DIM, p = args
+    
     print(f"row {y_start} of {MAX_DIM}")
     row = set()
     for y in range(y_start, y_start+MAX_DIM//THREADS):
@@ -149,17 +151,18 @@ def check_row(y_start, polys, all_poss):
                 row = new_row
 
         this_row = []
-        [this_row.extend(tuple(range(i, j+1))) for i, j in row]
+        # create the ranges
 
+        #[this_row.extend(tuple(range(i, j+1))) for i, j in row]        
+        # instead, create the missing ranges
+        [this_row.extend(tuple(range(i, j+1))) for i, j in sorted(row)[1:]]
 
-        res = all_poss.difference(this_row)
-        del this_row
-
-        if res:
-            res = (tuple(res)[0] * 4000000) + y
-            with open("day15bresult.txt", "w") as f:
-                f.write(str(res))
-            exit("finished")
+        if this_row:
+            print(this_row)
+##            res = (tuple(res)[0] * 4000000) + y
+##            with open("day15bresult.txt", "w") as f:
+##                f.write(str(res))
+##            exit("finished")
 
 def solve(data):
     count = 0
@@ -198,10 +201,16 @@ def solve(data):
     threads = []
 
     all_poss = set(range(0, MAX_DIM+1))
-    print("prepping threads")
-    for y in range(0, MAX_DIM, MAX_DIM//THREADS):
+    print("prepping multi processes")
+    with Pool(5) as pool:
+        for y in range(0, MAX_DIM, MAX_DIM//THREADS):
+            args = [y, polys, all_poss, MAX_DIM, p] 
+            check_row(args)
 
-        threads.append(Thread(target=check_row, args=[y, polys, all_poss]))
+        
+    
+
+   
 
     print("Running threads")
     for t in threads:
