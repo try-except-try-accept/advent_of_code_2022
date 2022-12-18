@@ -1,0 +1,27 @@
+4
+1
+XXXX
+
+3
+3
+ X 
+XXX
+ X 
+
+3
+3
+  X
+  X
+XXX
+
+1
+4
+X
+X
+X
+X
+
+2
+2
+XX
+XX
