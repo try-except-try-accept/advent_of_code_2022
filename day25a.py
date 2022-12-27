@@ -23,7 +23,7 @@ TESTS = """1=-0-2
 1=
 122///2=-1=0"""
 
-DEBUG = True
+DEBUG = False
 
 
 def calculate_snafu(target, max_=10):
@@ -32,54 +32,71 @@ def calculate_snafu(target, max_=10):
     while 5 ** bits < target:
         bits += 1
 
-    print("target is", target)
-    print(bits, "bits needed")
+    p.bugprint("target is", target)
+    p.bugprint(bits, "bits needed")
 
     input()
 
     bits -= 1
     
+    # if it uses >=  1.5 x col value it's a 2.
+
+
+def int_arr_to_snafu(num):
+    snafu = "".join({-2:"=", -1:"-", 0:"0", 1:"1", 2:"2"}[v] for v in num)
+    return snafu.lstrip("0")
+
+def conv_dec_to_snafu(target):
+
+    yield "0"
+    
+    num = [0 for i in range(abs(target))]
+
+
+    if target > 0: # positive mode
+        dec_num = 1
+
+        condition = True
+        while condition:
+            i = -1
+            num[i] += 1
+
+            while num[i] == 3:
+                num[i-1] += 1
+
+                num[i] = -2
+
+                i -= 1
+
+            yield int_arr_to_snafu(num)
+
+            dec_num += 1
+            condition = dec_num < target
+        dec_num = 1
+        
+    else:
+        dec_num = -1
+        condition = True
+        while condition:
+            i = -1
+            num[i] -= 1
+
+            while num[i] == -3:
+                num[i-1] -= 1
+
+                num[i] = 2
+
+                i -= 1
+
+            yield int_arr_to_snafu(num)
+
+            dec_num -= 1
+            condition = dec_num > target
+
     
 
-    num = [0, 0, 0] + [2 for i in range(bits)]
-    dec_num = conv_snafu("2" * bits) + 1
-    print("dec num is", dec_num);   input()
 
-
-    calc_req = target-dec_num
-    print("Will need to iterate through", calc_req, "Calculations")
-
-
-    start = timeit()
-    count = 0
-    
-    while True:
-        i = -1
-        num[i] += 1
-
-        while num[i] == 3:
-            num[i-1] += 1
-            num[i] = -2
-            i -= 1
-
-        if dec_num == target:
-            snafu = "".join({-2:"=", -1:"-", 0:"0", 1:"1", 2:"2"}[v] for v in num)       
-            snafu = snafu.lstrip("0")
-            return snafu
-
-        dec_num += 1
-        count += 1
-
-        if count == 1000000:
-            stop = timeit()
-
-            time_diff = stop - start
-
-            print(f"It took {time_diff} to do 1000000 calculations.")
-            print(f"It'll take {time_diff * calc_req/1000000} to finish")
-
-
-def conv_snafu(num):
+def conv_snafu_to_dec(num):
     this_snafu = 0
     for col, bit in enumerate(reversed(num)):
         col_val = "=-012".index(bit)-2
@@ -89,21 +106,66 @@ def conv_snafu(num):
       
 
 
-def increment(bits):
-    bits[-1] += 1
+pos_snafus = list(conv_dec_to_snafu(1000))
+
+neg_snafus = list(conv_dec_to_snafu(-1000))
     
 
 def solve(data):
     total = 0
 
-    for row in data:
+    longest_snafu = len(max(data, key=len))
+
+    cols = [0 for i in range(longest_snafu)]
+
+    answer = ""
+
+    col_index = -1
+    for col in range(longest_snafu):
+
+        p.bugprint("Adding col", col_index)
+
+        calc = " "
+        
+        for row in data:
             
-        total += conv_snafu(row)
+            try:
+                cols[col_index] += conv_snafu_to_dec(row[col_index])
+                p.bugprint("+" + row.rjust(10, " "))
+                calc += " + " + row[col_index]
+            except IndexError:
+                continue
 
+        
+        col_sum = cols[col_index]
+        p.bugprint(f"{calc} = {col_sum}")
 
-    print("Total is", total)
+        if col_sum >= 0:
+            result = pos_snafus[col_sum]
+        else:
+            result = neg_snafus[abs(col_sum)]
 
-    return calculate_snafu(total)   
+        p.bugprint(f"Which is {result} in snafu")
+
+        answer = result[-1] + answer
+
+        p.bugprint(f"Answer is now {answer}")
+
+        carry = result[:-1]
+
+        p.bugprint("And carry the", carry)
+
+        data.append(carry + ("0" * abs(col_index)))
+
+        col_index -= 1
+
+        
+    answer = carry + answer
+        
+    p.bugprint(answer)
+ 
+
+    return answer
 
 
 
@@ -114,3 +176,6 @@ if __name__ == "__main__":
         puzzle_input = p.load_puzzle()
         puzzle_input = p.pre_process(puzzle_input, *PP_ARGS)
         print("FINAL ANSWER: ", solve(puzzle_input))
+
+
+
