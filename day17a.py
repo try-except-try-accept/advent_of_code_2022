@@ -3,8 +3,6 @@ from collections import Counter
 from helpers import PuzzleHelper
 from math import ceil
 
-import tetris
-
 PP_ARGS = False, False #rotate, cast int
 
 DAY = 17
