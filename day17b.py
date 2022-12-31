@@ -4,6 +4,7 @@ from helpers import PuzzleHelper
 from math import ceil
 from timeit import timeit
 
+import tetris
 
 PP_ARGS = False, False #rotate, cast int
 
@@ -185,24 +186,9 @@ def get_jets(num, jet_q):
         yield jet
 
 
-def count_sub_sequence(rested_record, pattern_check, length):
-
-    if len(rested_record) < length + 1: return None
-
-    result = rested_record[:length] == pattern_check == rested_record[-length:]
-    for i in range(0, len(rested_record)-length):
-        if rested_record[i:i+length] == pattern_check:
-            return i
-
-    return None
-
-    
-
 
 def solve(data):
     global DEBUG
-
-    SUB_PATTERN_LENGTH = 100
   
 
     block_q = init_block_q()
@@ -215,65 +201,20 @@ def solve(data):
     num_rows_rested = 0
     overall_rested = 0
 
-    rested_combinations = set()
-
+    
     start = timeit()
 
-    pattern_check = []
-    rested_record = []
-
-    newly_rested_record = []
-    
+    TIME_PREV = 1000000
 
     for turn in range(MOVE_LIMIT):
-        
-        newly_rested = 0
-        
-        sequence_start = count_sub_sequence(rested_record, pattern_check, SUB_PATTERN_LENGTH)
 
-        if sequence_start is not None:
-            print("Repetition found.")
+        if turn == TIME_PREV:
+            stop = timeit()
+            diff = stop - start
+            print(f"{TIME_PREV} turns completed in {diff} seconds. {MOVE_LIMIT-TIME_PREV} turns remain: {diff*(MOVE_LIMIT/TIME_PREV)} seconds")
             
-            
-            rested_record = rested_record[:-SUB_PATTERN_LENGTH]
-            
-            sequence_length = len(rested_record) - sequence_start
 
-            print("Record of ", len(newly_rested_record), "newly rested counts")
-            print("Record of ", len(rested_record), "rested block formations")
-
-            rested_during_sequence = newly_rested_record[sequence_start:-SUB_PATTERN_LENGTH]
-
-            total_rested_during_sequence = sum(rested_during_sequence)
-
-            print("sequence_start", sequence_start, "length", sequence_length)
-
-            num_more_sequences = (MOVE_LIMIT-(turn-SUB_PATTERN_LENGTH)) / sequence_length
-
-            num_more_whole_seq = int(num_more_sequences)
-
-            fraction_of_seq = num_more_sequences - num_more_whole_seq
-
-            print("Sequence will repeat for", num_more_whole_seq, "more times")
-
-            print("Rows rested during sequence", rested_during_sequence)
-
-            rested_by_first_seq = sum(newly_rested_record[:-SUB_PATTERN_LENGTH])
-
-            print("Rows rested by time first sequence has completed", rested_by_first_seq)
-
-            final_row_count = int(rested_by_first_seq + (total_rested_during_sequence * num_more_whole_seq))
-
-            print("Rows rested after all sequences have completed", final_row_count)
-
-            print("With", fraction_of_seq, "fraction of a sequence to still sort out...")
-
-            rested_during_fraction_of_a_seq = sum(rested_during_sequence[:int(len(rested_during_sequence) * fraction_of_seq)])
-
-
-            return final_row_count + rested_during_fraction_of_a_seq
-            
-        
+  
 
         p.bugprint("A new block begins to fall")
         bounds = 0
@@ -295,6 +236,7 @@ def solve(data):
 
         couldnt_fall = check_if_cant_fall(fall_point, rested, block, num_rows_rested)
 
+        
         landed = False
         while not landed:
             
@@ -327,22 +269,6 @@ def solve(data):
 
                 #debinarise(rested)
 
-                newly_rested_record.append(newly_rested)
-
-                
-                
-                top_row = isolate_lines(block=rested, line=0, num_lines=1, block_height=num_rows_rested)
-
-                rested_record.append(top_row)
-                pattern_check.append(top_row)
-                
-                if len(pattern_check) == SUB_PATTERN_LENGTH + 1:
-                    pattern_check.pop(0)
-
-
-        
-
-
     return overall_rested
         
 def debinarise(num):
@@ -363,107 +289,13 @@ def debinarise(num):
         p.bugprint(f"Problem debinarising {num}")
 
 
-def convert_arg(data):
-    if set(data) == set(["█", "."]):
-        data = data.replace(".", "0").replace("█", "1")
-        data = int(data, 2)
-
-    try:
-        return int(data)                              # return integer value
-    except ValueError:
-        if data in "TrueFalseNone": return eval(data) # return bool/null flag
-        return data                                   # return > / < string
-    
-def process_test_args(data):
-
-    data = tuple(map(convert_arg, data.split(",")))
-
-    if len(data) == 1:  data = data[0]
-
-    return data
-
-    
-        
-    
-   
-               
-def module_tests():
-    with open("day17.tests", encoding="utf-8") as f:
-        test_data = f.read()
-
-    test_num = 1
-    func = None
-    data = {}
-    this_test = ""
-
-    p.bugprint(f"processing {test_data.count('test:')}")
-    for line in test_data.splitlines():
-
-
-        if "test:" in line:
-            p.bugprint(line)
-            e = None
-            if func:
-                
-                data = {arg:process_test_args(value) for arg, value in data.items()}
-                expected = data.pop("result")
-
-                p.bugprint(data)
-
-                actual = eval(f"{func}(**data)")
-     
-                if expected != actual:
-                    p.bugprint(this_test)
-                    p.bugprint(f"RECEIVED: {actual}\n EXPECTED {expected}")
-                    p.bugprint(f"received")
-                    debinarise(actual)
-                    raise Exception(f"Test number {test_num} failed\n{e}")
-                p.bugprint(f"Test number {test_num} ({func}) PASSED 🎉")
-                test_num += 1
-
-                p.bugprint()
-                
-                
-            func = line.split("test:")[1]
-            data = {}
-            this_test = line + "\n"
-
-        else:
-            if ":" in line:
-                line_split = line.split(":")
-                this_arg = line_split[0]
-                if len(line) > 1:
-                    data[this_arg] = line_split[1] # test value on same line
-            else:
-                data[this_arg] += line
-
-            this_test += line + "\n"
-
-
-           
-                
-
-        
-
-
-            
-
-            
-
-                
-                
-                
-        
-
-
-
-
 if __name__ == "__main__":
     
     p = PuzzleHelper(DAY, TEST_DELIM, FILE_DELIM, DEBUG, PP_ARGS)
-    if input("Run module tests?"):
-        module_tests()
-        input("all module tests passed")
+
+
+    p.module_tests(locals())
+
 
     if p.check(TESTS, solve):
         puzzle_input = p.load_puzzle()
