@@ -4,7 +4,6 @@ from helpers import PuzzleHelper
 from math import ceil
 from timeit import timeit
 
-import tetris
 
 PP_ARGS = False, False #rotate, cast int
 
@@ -186,9 +185,24 @@ def get_jets(num, jet_q):
         yield jet
 
 
+def count_sub_sequence(rested_record, pattern_check, length):
+
+    if len(rested_record) < length + 1: return None
+
+    result = rested_record[:length] == pattern_check == rested_record[-length:]
+    for i in range(0, len(rested_record)-length):
+        if rested_record[i:i+length] == pattern_check:
+            return i
+
+    return None
+
+    
+
 
 def solve(data):
     global DEBUG
+
+    SUB_PATTERN_LENGTH = 100
   
 
     block_q = init_block_q()
@@ -201,20 +215,65 @@ def solve(data):
     num_rows_rested = 0
     overall_rested = 0
 
-    
+    rested_combinations = set()
+
     start = timeit()
 
-    TIME_PREV = 1000000
+    pattern_check = []
+    rested_record = []
+
+    newly_rested_record = []
+    
 
     for turn in range(MOVE_LIMIT):
+        
+        newly_rested = 0
+        
+        sequence_start = count_sub_sequence(rested_record, pattern_check, SUB_PATTERN_LENGTH)
 
-        if turn == TIME_PREV:
-            stop = timeit()
-            diff = stop - start
-            print(f"{TIME_PREV} turns completed in {diff} seconds. {MOVE_LIMIT-TIME_PREV} turns remain: {diff*(MOVE_LIMIT/TIME_PREV)} seconds")
+        if sequence_start is not None:
+            print("Repetition found.")
             
+            
+            rested_record = rested_record[:-SUB_PATTERN_LENGTH]
+            
+            sequence_length = len(rested_record) - sequence_start
 
-  
+            print("Record of ", len(newly_rested_record), "newly rested counts")
+            print("Record of ", len(rested_record), "rested block formations")
+
+            rested_during_sequence = newly_rested_record[sequence_start:-SUB_PATTERN_LENGTH]
+
+            total_rested_during_sequence = sum(rested_during_sequence)
+
+            print("sequence_start", sequence_start, "length", sequence_length)
+
+            num_more_sequences = (MOVE_LIMIT-(turn-SUB_PATTERN_LENGTH)) / sequence_length
+
+            num_more_whole_seq = int(num_more_sequences)
+
+            fraction_of_seq = num_more_sequences - num_more_whole_seq
+
+            print("Sequence will repeat for", num_more_whole_seq, "more times")
+
+            print("Rows rested during sequence", rested_during_sequence)
+
+            rested_by_first_seq = sum(newly_rested_record[:-SUB_PATTERN_LENGTH])
+
+            print("Rows rested by time first sequence has completed", rested_by_first_seq)
+
+            final_row_count = int(rested_by_first_seq + (total_rested_during_sequence * num_more_whole_seq))
+
+            print("Rows rested after all sequences have completed", final_row_count)
+
+            print("With", fraction_of_seq, "fraction of a sequence to still sort out...")
+
+            rested_during_fraction_of_a_seq = sum(rested_during_sequence[:int(len(rested_during_sequence) * fraction_of_seq)])
+
+
+            return final_row_count + rested_during_fraction_of_a_seq
+            
+        
 
         p.bugprint("A new block begins to fall")
         bounds = 0
@@ -236,7 +295,6 @@ def solve(data):
 
         couldnt_fall = check_if_cant_fall(fall_point, rested, block, num_rows_rested)
 
-        
         landed = False
         while not landed:
             
@@ -268,6 +326,22 @@ def solve(data):
                 overall_rested += newly_rested
 
                 #debinarise(rested)
+
+                newly_rested_record.append(newly_rested)
+
+                
+                
+                top_row = isolate_lines(block=rested, line=0, num_lines=1, block_height=num_rows_rested)
+
+                rested_record.append(top_row)
+                pattern_check.append(top_row)
+                
+                if len(pattern_check) == SUB_PATTERN_LENGTH + 1:
+                    pattern_check.pop(0)
+
+
+        
+
 
     return overall_rested
         
