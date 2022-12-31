@@ -104,7 +104,7 @@ def solve(data):
             if first or x_same and horiz or y_same and vert:
                 first = False                
                 tail_move = False
-
+                p.bugprint("Don't move tail!")
             # move tail
 
             if tail_move:
@@ -114,6 +114,7 @@ def solve(data):
                 elif d == "R":
                     tail[0] += 1                
                 elif d == "U":
+                    p.bugprint("tail up")
                     tail[1] -= 1
                 else:
                     tail[1] += 1
@@ -121,8 +122,10 @@ def solve(data):
                 if horiz:
                     row_diff = head[1] - tail[1]                    
                     if row_diff == 1:
+                        
                         tail[1] += 1
                     elif row_diff == -1:
+                        p.bugprint("tail down")
                         tail[1] -= 1
                 else:
                     col_diff = head[0] - tail[0]
@@ -132,13 +135,15 @@ def solve(data):
                         tail[0] -= 1
 
             
-            if tail == head:                
+            if tail == head:
+                p.bugprint("the tail was the head")
                 snake[1] = list(last_tail)
             else:               
                 visited.add(tuple(tail))
 
 
             display(visited, snake)
+            
 
 
             last_tail = tuple(tail)
